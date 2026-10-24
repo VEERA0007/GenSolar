@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Gensolar rooftop solar cost estimator for residential, commercial and industrial customers in Andhra Pradesh, Telangana, Odisha and Chhattisgarh.">
+<title>Gensolar Estimator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>
+/* Only signed-in users and guests (opened from the welcome page) can see this page. */
+(function(){
+  var ok=false,name='';
+  try{ name=sessionStorage.getItem('gs_user')||''; }catch(e){}
+  if(name){ok=true}
+  else if(/[?&]guest=1/.test(location.search)){ok=true;try{sessionStorage.setItem('gs_guest','1')}catch(e){}}
+  else{try{ok=sessionStorage.getItem('gs_guest')==='1'}catch(e){}}
+  if(!ok){location.replace('index.html');return}
+  window.__gsUser=name;
+})();
+</script>
+<style>
+/* Layout: segment switch on top, inputs and live results side by side on desktop, stacked on phones. */
+:root{
+  --bg:#F3F6F9; --surface:#FFFFFF; --surface-2:#EEF2F6; --ink:#12202C; --muted:#586979; --line:#D8E0E8;
+  --solar:#F2A900; --solar-soft:#FFF0C7; --on-solar:#231700;
+  --deep:#0E5A6B; --on-deep:#FFFFFF; --good:#1B7A4B; --warn:#9A5B00; --warn-bg:#FFF4DC; --bad:#B3261E;
+  --font-display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --font-body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1620; --surface:#15222E; --surface-2:#1B2A38; --ink:#E7EEF4; --muted:#92A3B2; --line:#2B3B4A;
+    --solar:#FFB81F; --solar-soft:#3A2D0B; --on-solar:#231700;
+    --deep:#62BCD0; --on-deep:#07202A; --good:#4CC38A; --warn:#F0B35A; --warn-bg:#35280F; --bad:#FF8A80;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1620; --surface:#15222E; --surface-2:#1B2A38; --ink:#E7EEF4; --muted:#92A3B2; --line:#2B3B4A;
+  --solar:#FFB81F; --solar-soft:#3A2D0B; --on-solar:#231700;
+  --deep:#62BCD0; --on-deep:#07202A; --good:#4CC38A; --warn:#F0B35A; --warn-bg:#35280F; --bad:#FF8A80;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--ink); font:15px/1.5 var(--font-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:20px 40px;
+}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px}
+.brandname{font:800 20px/1 var(--font-display);letter-spacing:-.01em}
+.who{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.out{font:600 13px var(--font-body);color:var(--deep);background:transparent;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+.tag{font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+h1{font:800 clamp(26px,5vw,40px)/1.08 var(--font-display);letter-spacing:-.02em;margin:0;text-wrap:balance;max-width:20ch}
+.lede{margin:0;color:var(--muted);max-width:60ch}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;background:var(--surface-2);padding:4px;border-radius:12px;border:1px solid var(--line)}
+.seg button{
+  font:inherit;color:var(--ink);background:transparent;border:0;border-radius:9px;padding:10px 8px;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0
+}
+.seg button b{font-weight:600;font-size:15px}
+.seg button span{font-size:11px;color:var(--muted);text-align:center}
+.seg button[aria-pressed="true"]{background:var(--solar);color:var(--on-solar)}
+.seg button[aria-pressed="true"] span{color:var(--on-solar);opacity:.8}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,textarea:focus-visible{outline:2px solid var(--deep);outline-offset:2px}
+.grid{display:grid;gap:18px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:880px){.grid{grid-template-columns:minmax(0,400px) minmax(0,1fr);align-items:start}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel h2,.results h2{font:600 13px/1 var(--font-body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:13px;font-weight:500}
+.field small{color:var(--muted);font-size:12px}
+input[type=text],input[type=number],select{
+  font:16px var(--font-body);color:var(--ink);background:var(--surface-2);border:1px solid var(--line);
+  border-radius:8px;padding:9px 11px;width:100%;min-width:0
+}
+input[type=range]{width:100%;accent-color:var(--deep)}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.check input{margin-top:3px;accent-color:var(--deep);width:18px;height:18px;flex:none}
+.offset-head{display:flex;justify-content:space-between;align-items:baseline}
+.offset-head output{font:500 14px var(--font-mono)}
+details{border-top:1px solid var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:600;font-size:14px}
+details .row{margin-top:12px}
+.slabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:10px;margin-top:12px}
+.hint{font-size:12px;color:var(--muted);margin:10px 0 0}
+.results{display:flex;flex-direction:column;gap:14px;min-width:0}
+.rhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.chip{font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;background:var(--solar-soft);color:var(--warn);padding:3px 8px;border-radius:999px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;min-width:0}
+.tile.lead{background:var(--solar);border-color:var(--solar);color:var(--on-solar)}
+.tile .k{font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.tile.lead .k{color:var(--on-solar);opacity:.8}
+.tile .v{font:800 clamp(24px,4.4vw,32px)/1.1 var(--font-display);margin-top:4px;letter-spacing:-.01em;overflow-wrap:anywhere}
+.tile .s{font-size:12px;color:var(--muted);margin-top:4px}
+.tile.lead .s{color:var(--on-solar);opacity:.85}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;min-width:0}
+.card h3{margin:0 0 10px;font:600 15px var(--font-body)}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;margin:0}
+.kv dt,.kv dd{margin:0;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.kv dt{color:var(--muted);padding-right:12px}
+.kv dd{font:500 14px var(--font-mono);text-align:right;font-variant-numeric:tabular-nums}
+.kv dt.strong,.kv dd.strong{color:var(--ink);font-weight:600}
+.kv dd.pos{color:var(--good)} .kv dd.neg{color:var(--bad)}
+.chartbox{overflow-x:auto}
+.chartbox svg{display:block;width:100%;min-width:300px;height:auto}
+.g-grid{stroke:var(--line);stroke-width:1}
+.g-zero{stroke:var(--muted);stroke-width:1.2}
+.g-text{fill:var(--muted);font:10px var(--font-mono)}
+.g-line{fill:none;stroke:var(--deep);stroke-width:2.4;stroke-linejoin:round}
+.g-area{fill:var(--deep);opacity:.12}
+.g-pay{stroke:var(--solar);stroke-width:1.6;stroke-dasharray:4 3}
+.g-dot{fill:var(--solar);stroke:var(--surface);stroke-width:2}
+.g-end{fill:var(--ink);font:600 10.5px var(--font-mono)}
+.g-paytext{fill:var(--ink);font:600 10.5px var(--font-mono)}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:10px 12px;font-size:13px;margin:0}
+.err{background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:18px;color:var(--muted);margin:0}
+textarea{font:13px/1.5 var(--font-mono);width:100%;min-height:210px;resize:vertical;background:var(--surface-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px}
+.btn{font:600 14px var(--font-body);background:var(--deep);color:var(--on-deep);border:0;border-radius:8px;padding:10px 16px;cursor:pointer}
+.qrow{display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+.qrow span{font-size:13px;color:var(--good)}
+.fine{font-size:12px;color:var(--muted);max-width:80ch;margin:0}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="var(--solar)"/><g stroke="var(--solar)" stroke-width="2" stroke-linecap="round"><path d="M12 1v3M12 20v3M1 12h3M20 12h3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></g></svg>
+      <span class="brandname">Gensolar</span>
+    </div>
+    <span class="who"><span class="tag" id="who">Rooftop solar estimator</span><button type="button" class="out" id="logout">Sign out</button></span>
+  </header>
+
+  <h1>What will solar cost, and what will it save?</h1>
+  <p class="lede">Choose a segment and state, enter electricity use, and get system size, project cost, subsidy, monthly savings and payback. Covers Andhra Pradesh, Telangana, Odisha and Chhattisgarh.</p>
+
+  <div class="seg" role="group" aria-label="Customer segment">
+    <button type="button" data-seg="res" aria-pressed="true"><b>Residential</b><span>Homes and societies</span></button>
+    <button type="button" data-seg="com" aria-pressed="false"><b>Commercial</b><span>Shops, offices, schools</span></button>
+    <button type="button" data-seg="ind" aria-pressed="false"><b>Industrial</b><span>Factories, warehouses</span></button>
+  </div>
+
+  <div class="grid">
+    <section class="panel" aria-label="Inputs">
+      <h2>Your site</h2>
+      <div class="field"><label for="name">Customer name</label><input id="name" type="text" placeholder="Optional" autocomplete="off"></div>
+      <div class="row">
+        <div class="field"><label for="state">State</label>
+          <select id="state">
+            <option value="TG">Telangana</option><option value="AP">Andhra Pradesh</option>
+            <option value="OD">Odisha</option><option value="CG">Chhattisgarh</option>
+          </select>
+        </div>
+        <div class="field"><label for="city">City</label><select id="city"></select></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="mode">Enter usage as</label>
+          <select id="mode"><option value="bill">Monthly bill (₹)</option><option value="units">Monthly units (kWh)</option></select>
+        </div>
+        <div class="field"><label for="amount" id="amountLabel">Average monthly bill (₹)</label><input id="amount" type="number" inputmode="decimal" min="0" step="any" value="2500"></div>
+      </div>
+      <div class="field"><label for="roof">Shadow-free roof area (sq ft)</label>
+        <input id="roof" type="number" inputmode="decimal" min="0" step="any" value="400">
+        <small>Leave empty if the roof is not a limit.</small>
+      </div>
+      <div class="field">
+        <div class="offset-head"><label for="offset">Share of usage to cover with solar</label><output id="offsetOut" for="offset">90%</output></div>
+        <input id="offset" type="range" min="50" max="100" step="5" value="90">
+      </div>
+      <label class="check" data-only="res"><input id="subsidyOn" type="checkbox" checked><span>Apply PM Surya Ghar central subsidy (₹30,000 per kW for the first 2 kW, ₹78,000 maximum)</span></label>
+      <label class="check" data-only="com ind"><input id="adOn" type="checkbox"><span>Show accelerated depreciation tax benefit (40% written-down value)</span></label>
+      <p class="hint" data-only="com ind" style="margin:0">No central subsidy is assumed for commercial and industrial rooftops. Confirm tax treatment with your CA.</p>
+
+      <details>
+        <summary>Assumptions you can edit</summary>
+        <div class="row">
+          <div class="field"><label for="gen">Yearly yield (kWh per kW)</label><input id="gen" type="number" inputmode="decimal" min="800" step="10" value="1450"></div>
+          <div class="field"><label for="cost">Cost per kW override (₹)</label><input id="cost" type="number" inputmode="decimal" min="0" step="500" placeholder="Auto"><small>Auto picks a rate by system size, GST included.</small></div>
+          <div class="field" data-only="com ind"><label for="rate">Grid rate (₹ per unit)</label><input id="rate" type="number" inputmode="decimal" min="0" step="0.1" value="9"><small id="rateHint"></small></div>
+          <div class="field"><label for="esc">Tariff rise per year (%)</label><input id="esc" type="number" inputmode="decimal" min="0" step="0.5" value="3"></div>
+          <div class="field"><label for="deg">Panel output loss per year (%)</label><input id="deg" type="number" inputmode="decimal" min="0" step="0.1" value="0.5"></div>
+          <div class="field"><label for="om">Upkeep per year (% of cost)</label><input id="om" type="number" inputmode="decimal" min="0" step="0.1" value="1"></div>
+          <div class="field"><label for="inv">Inverter replacement, year 12 (% of cost)</label><input id="inv" type="number" inputmode="decimal" min="0" step="1" value="8"></div>
+          <div class="field"><label for="panelW">Panel size (Wp)</label><input id="panelW" type="number" inputmode="decimal" min="300" step="10" value="550"></div>
+          <div class="field"><label for="areaKw">Roof area per kW (sq ft)</label><input id="areaKw" type="number" inputmode="decimal" min="50" step="5" value="100"></div>
+          <div class="field" data-only="com ind"><label for="tax">Tax rate (%)</label><input id="tax" type="number" inputmode="decimal" min="0" step="0.01" value="25.17"></div>
+        </div>
+        <div data-only="res">
+          <p class="hint" id="slabHint"></p>
+          <div class="slabs" id="slabs"></div>
+        </div>
+      </details>
+    </section>
+
+    <section class="results" aria-label="Estimate" aria-live="polite">
+      <div class="rhead"><h2>Your estimate</h2><span class="chip" id="chip">Example inputs</span></div>
+      <p class="err" id="err" hidden></p>
+      <div id="out" class="results">
+        <p class="note" id="note" hidden></p>
+        <div class="tiles">
+          <div class="tile lead"><div class="k">System size</div><div class="v" id="tSize"></div><div class="s" id="tSizeS"></div></div>
+          <div class="tile"><div class="k">You pay</div><div class="v" id="tPay"></div><div class="s" id="tPayS"></div></div>
+          <div class="tile"><div class="k">Payback</div><div class="v" id="tBack"></div><div class="s" id="tBackS"></div></div>
+        </div>
+        <div class="card"><h3>Cumulative cash position over 25 years</h3><div class="chartbox" id="chart"></div></div>
+        <div class="card"><h3>Breakdown</h3><dl class="kv" id="kv"></dl></div>
+        <div class="card">
+          <h3>Quote summary</h3>
+          <textarea id="quote" readonly aria-label="Quote summary text"></textarea>
+          <div class="qrow"><button class="btn" id="copy" type="button">Copy summary</button><span id="copied" hidden></span></div>
+        </div>
+        <p class="fine" id="basis"></p>
+      </div>
+    </section>
+  </div>
+
+  <p class="fine">Indicative estimate only. Final design, price and subsidy eligibility depend on a site survey, the current tariff order and DISCOM approval. Savings use net metering at your grid rate, a yearly tariff rise and panel output loss. Grid rates come from each state's tariff schedule as noted under the quote, and system prices are approximate defaults. Every rate and price can be edited above.</p>
+</div>
+
+<script>
+/*MODEL*/
+/* A residential tariff is a list of bands. A band applies when monthly use is up to its max,
+   and holds telescopic slabs as [upper limit in units, rate]. Most states have one band. */
+function billFor(u,bands){
+  var b=bands[bands.length-1];
+  for(var i=0;i<bands.length;i++){if(u<=bands[i].max){b=bands[i];break}}
+  var left=u,prev=0,tot=0;
+  for(var j=0;j<b.slabs.length;j++){
+    var take=Math.min(left,b.slabs[j][0]-prev);
+    tot+=take*b.slabs[j][1];left-=take;prev=b.slabs[j][0];
+    if(left<=0)break;
+  }
+  return tot;
+}
+function unitsFor(bill,bands){if(bill<=0)return 0;var lo=0,hi=1e7;if(billFor(hi,bands)<bill)return hi;for(var i=0;i<70;i++){var m=(lo+hi)/2;if(billFor(m,bands)<bill)lo=m;else hi=m}return(lo+hi)/2}
+function autoCost(seg,kw){
+  var t={res:[[1,72000],[2,64000],[3,60000],[5,57000],[10,52000],[Infinity,48000]],
+         com:[[20,52000],[50,46000],[100,43000],[Infinity,41000]],
+         ind:[[100,43000],[500,40000],[1000,38000],[Infinity,36500]]}[seg];
+  for(var i=0;i<t.length;i++){if(kw<=t[i][0])return t[i][1]}
+}
+function subsidyFor(kw){
+  if(kw>=3)return 78000; if(kw>=2)return 60000+(kw-2)*18000; if(kw>=1)return 30000+(kw-1)*30000; return 30000*kw;
+}
+function irrOf(cf){
+  var f=function(r){var s=0;for(var i=0;i<cf.length;i++)s+=cf[i]/Math.pow(1+r,i);return s};
+  var lo=-0.9,hi=2;if(f(lo)*f(hi)>0)return null;
+  for(var i=0;i<100;i++){var m=(lo+hi)/2;if(f(lo)*f(m)<=0)hi=m;else lo=m}
+  return(lo+hi)/2;
+}
+function model(p){
+  var res=p.seg==='res';
+  var U=p.mode==='units'?p.amount:(res?unitsFor(p.amount,p.rates):(p.rate>0?p.amount/p.rate:0));
+  if(!(U>0))return{error:'Enter your monthly '+(p.mode==='units'?'units':'bill')+' to see an estimate.'};
+  var annualU=U*12, step=res?0.5:1;
+  var raw=annualU*p.offset/p.gen;
+  var kw=Math.max(step,Math.round(raw/step)*step), wanted=kw, roofLimited=false;
+  var cap=p.roof>0?p.roof/p.areaKw:Infinity;
+  if(kw>cap){kw=Math.floor(cap/step)*step;roofLimited=true}
+  if(kw<=0)return{error:'The roof area entered is too small for a rooftop system. Increase it or clear the field.'};
+  var G1=kw*p.gen;
+  var billNow=res?billFor(U,p.rates):U*p.rate;
+  var offU=Math.min(G1,annualU)/12;
+  var billAfter=res?billFor(Math.max(U-offU,0),p.rates):Math.max(U-offU,0)*p.rate;
+  var S1=(billNow-billAfter)*12;
+  var perKw=p.costOverride>0?p.costOverride:autoCost(p.seg,kw);
+  var gross=perKw*kw;
+  var subsidy=(res&&p.subsidyOn)?Math.min(subsidyFor(kw),gross):0;
+  var net=gross-subsidy;
+  var cf=[-net],cum=[-net],taxTotal=0,genTotal=0,omTotal=0,invCost=gross*p.inv/100;
+  for(var y=1;y<=25;y++){
+    var sav=S1*Math.pow((1-p.deg/100)*(1+p.esc/100),y-1);
+    var om=gross*p.om/100*Math.pow(1.04,y-1);
+    var inv=(y===12)?invCost:0;
+    var tax=(!res&&p.adOn)?p.tax/100*0.4*Math.pow(0.6,y-1)*net:0;
+    taxTotal+=tax;omTotal+=om;genTotal+=G1*Math.pow(1-p.deg/100,y-1);
+    var c=sav-om-inv+tax;cf.push(c);cum.push(cum[y-1]+c);
+  }
+  var payback=null;
+  for(var y2=1;y2<=25;y2++){if(cum[y2]>=0){payback=(y2-1)+(-cum[y2-1])/(cum[y2]-cum[y2-1]);break}}
+  var lcoe=(net+omTotal+invCost)/genTotal;
+  return{U:U,kw:kw,wanted:wanted,roofLimited:roofLimited,G1:G1,billNow:billNow,billAfter:billAfter,S1:S1,perKw:perKw,
+    gross:gross,subsidy:subsidy,net:net,cf:cf,cum:cum,payback:payback,gain:cum[25],irr:irrOf(cf),taxTotal:taxTotal,
+    lcoe:lcoe,avgRate:billNow/U,panels:Math.ceil(kw*1000/p.panelW),area:kw*p.areaKw,co2:G1*0.71/1000};
+}
+/*ENDMODEL*/
+
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var SEG={
+    res:{amount:2500,roof:400,label:'Residential'},
+    com:{amount:40000,roof:3000,label:'Commercial'},
+    ind:{amount:600000,roof:60000,label:'Industrial'}
+  };
+  var INF=Infinity;
+  /* Tariffs: FY 2026-27. com and ind are energy rates in Rs per unit (fixed and demand charges left out,
+     since solar does not offset them). Yields are typical kWh per kW per year by city. */
+  var STATES={
+    TG:{name:'Telangana',
+      cities:{Hyderabad:1450,Warangal:1450,Karimnagar:1450,Nizamabad:1460,Khammam:1440,Other:1450},
+      res:[{max:100,slabs:[[50,1.95],[100,3.10]]},
+           {max:200,slabs:[[100,3.40],[200,4.80]]},
+           {max:INF,slabs:[[200,5.10],[300,7.70],[400,9.00],[800,9.50],[INF,10.00]]}],
+      com:11.00,ind:7.65,
+      comBasis:'LT-II commercial rate for use above 500 units a month. Energy charge only.',
+      indBasis:'HT-I industry general rate at 11 kV. Energy charge only.',
+      slabNote:'Telangana domestic rates depend on total monthly use, so the slabs are grouped by use.',
+      basis:'Telangana rates are from the TGERC tariff schedule for FY 2026-27 (TGSPDCL and TGNPDCL).'},
+    AP:{name:'Andhra Pradesh',
+      cities:{Visakhapatnam:1400,Vijayawada:1420,Guntur:1430,Kakinada:1400,Nellore:1430,Tirupati:1450,Kurnool:1500,Anantapur:1520,Other:1440},
+      res:[{max:INF,slabs:[[30,1.90],[75,3.00],[125,4.50],[225,6.00],[400,8.75],[INF,9.75]]}],
+      com:9.95,ind:6.30,
+      comBasis:'LT commercial rate for use above 500 units a month. Energy charge only.',
+      indBasis:'HT industry general rate at 11 kV. Approximate, please confirm. Energy charge only.',
+      slabNote:'Andhra Pradesh domestic slabs are telescopic.',
+      basis:'Andhra Pradesh home and commercial rates come from tariff pages that cite the FY 2026-27 order, where APERC kept FY 2025-26 rates. The HT industrial rate is approximate and could not be checked against the order. Confirm with the APERC tariff order before quoting.'},
+    OD:{name:'Odisha',
+      cities:{Bhubaneswar:1380,Cuttack:1380,Berhampur:1400,Sambalpur:1400,Rourkela:1370,Other:1380},
+      res:[{max:INF,slabs:[[50,2.90],[200,4.70],[400,5.70],[INF,6.10]]}],
+      com:7.60,ind:4.75,
+      comBasis:'LT general purpose rate for use above 300 units a month. Energy charge only.',
+      indBasis:'HT industry rate for load factor above 60%. Energy charge only.',
+      slabNote:'Odisha domestic slabs are telescopic. The 10 paise per unit prompt-payment rebate is not included.',
+      basis:'Odisha rates are from the OERC FY 2026-27 DISCOM tariff notification. The source table was partly unclear, so confirm against the OERC order before quoting.'},
+    CG:{name:'Chhattisgarh',
+      cities:{Raipur:1450,Bhilai:1450,Durg:1450,Bilaspur:1440,Korba:1430,Other:1440},
+      res:[{max:INF,slabs:[[100,4.40],[200,4.50],[400,6.00],[600,7.00],[INF,8.80]]}],
+      com:9.00,ind:7.85,
+      comBasis:'LV-2 three-phase non-domestic rate for use above 400 units a month. Energy charge only.',
+      indBasis:'HV-3 industry rate at 11 kV, load factor above 15%. Energy charge only.',
+      slabNote:'Chhattisgarh domestic slabs are telescopic.',
+      basis:'Chhattisgarh rates are from the CSPDCL tariff schedule for FY 2026-27.'}
+  };
+  var seg='res',state='TG';
+
+  function buildSlabs(){
+    var st=STATES[state],box=$('slabs'),idx=0;
+    box.innerHTML='';
+    st.res.forEach(function(b,bi){
+      var prev=0,bandPrev=bi>0?st.res[bi-1].max:0;
+      b.slabs.forEach(function(s){
+        var from=prev===0?0:prev+1;
+        var lab=(s[0]===INF?'Above '+prev:from+'–'+s[0])+' units';
+        var sub='';
+        if(st.res.length>1){
+          sub=b.max===INF?'If use is above '+bandPrev:(bi===0?'If use is up to '+b.max:'If use is '+(bandPrev+1)+'–'+b.max);
+        }
+        var d=document.createElement('div');d.className='field';
+        d.innerHTML='<label for="slab'+idx+'">'+lab+'</label><input id="slab'+idx+'" type="number" inputmode="decimal" min="0" step="0.05" value="'+s[1]+'">'+(sub?'<small>'+sub+'</small>':'');
+        box.appendChild(d);
+        idx++;prev=s[0];
+      });
+    });
+    $('slabHint').textContent='Home electricity rates in ₹ per unit for '+st.name+'. '+st.slabNote+' Edit them to match the customer\'s tariff.';
+  }
+  function bandsFromInputs(){
+    var st=STATES[state],idx=0;
+    return st.res.map(function(b){
+      return{max:b.max,slabs:b.slabs.map(function(s){var v=parseFloat($('slab'+(idx++)).value);return[s[0],isNaN(v)?s[1]:v]})};
+    });
+  }
+  function setRate(){
+    var st=STATES[state],k=seg==='ind'?'ind':'com';
+    $('rate').value=st[k];
+    $('rateHint').textContent=st[k+'Basis'];
+  }
+  function fillCities(){
+    var c=STATES[state].cities,sel=$('city');
+    sel.innerHTML='';
+    Object.keys(c).forEach(function(k){var o=document.createElement('option');o.textContent=k;sel.appendChild(o)});
+    $('gen').value=c[sel.value];
+  }
+
+  function inr(v){return '₹'+Math.round(Math.abs(v)).toLocaleString('en-IN')}
+  function sgn(v){return (v<0?'−':'')+inr(v)}
+  function cmp(v){
+    var a=Math.abs(v),s=v<0?'−':'';
+    if(a>=1e7)return s+'₹'+(a/1e7).toFixed(2)+' Cr';
+    if(a>=1e5)return s+'₹'+(a/1e5).toFixed(2)+' L';
+    return s+inr(a);
+  }
+  function short(v){
+    var a=Math.abs(v),s=v<0?'−':'';
+    if(a>=1e7)return s+(a/1e7).toFixed(1)+'Cr';
+    if(a>=1e5)return s+(a/1e5).toFixed(a>=1e6?0:1)+'L';
+    if(a>=1e3)return s+Math.round(a/1e3)+'k';
+    return s+Math.round(a);
+  }
+  function num(v,d){return v.toLocaleString('en-IN',{maximumFractionDigits:d==null?0:d})}
+  function yrs(v){return v==null?'25+ yrs':(v<1?(v*12).toFixed(0)+' mo':v.toFixed(1)+' yrs')}
+  function val(id){var v=parseFloat($(id).value);return isNaN(v)?0:v}
+
+  function read(){
+    var rates=bandsFromInputs();
+    return{seg:seg,mode:$('mode').value,amount:Math.max(val('amount'),0),rates:rates,rate:val('rate'),
+      gen:val('gen')||1450,offset:(val('offset')||90)/100,roof:val('roof'),areaKw:val('areaKw')||100,panelW:val('panelW')||550,
+      costOverride:val('cost'),esc:val('esc'),deg:val('deg'),om:val('om'),inv:val('inv'),
+      subsidyOn:$('subsidyOn').checked,adOn:$('adOn').checked,tax:val('tax')};
+  }
+
+  function niceStep(r){
+    var raw=r/4,mag=Math.pow(10,Math.floor(Math.log(raw)/Math.LN10)),n=raw/mag;
+    return(n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*mag;
+  }
+  function chart(m){
+    var W=360,H=220,L=46,R=14,T=16,B=26;
+    var mn=Math.min.apply(null,m.cum.concat([0])),mx=Math.max.apply(null,m.cum.concat([0]));
+    var step=niceStep(mx-mn||1);
+    var lo=Math.floor(mn/step)*step,hi=Math.ceil(mx/step)*step;
+    var px=function(y){return L+y/25*(W-L-R)};
+    var py=function(v){return T+(hi-v)/(hi-lo)*(H-T-B)};
+    var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Cumulative cash position by year">';
+    for(var t=lo;t<=hi+step/2;t+=step){
+      var yy=py(t);
+      s+='<line class="g-grid" x1="'+L+'" x2="'+(W-R)+'" y1="'+yy+'" y2="'+yy+'"/><text class="g-text" x="'+(L-6)+'" y="'+(yy+3.5)+'" text-anchor="end">'+short(t)+'</text>';
+    }
+    for(var x=0;x<=25;x+=5){s+='<text class="g-text" x="'+px(x)+'" y="'+(H-8)+'" text-anchor="middle">Yr '+x+'</text>'}
+    var z=py(0);
+    s+='<line class="g-zero" x1="'+L+'" x2="'+(W-R)+'" y1="'+z+'" y2="'+z+'"/>';
+    var pts=m.cum.map(function(v,i){return px(i).toFixed(1)+','+py(v).toFixed(1)});
+    s+='<path class="g-area" d="M'+px(0)+','+z+' L'+pts.join(' L')+' L'+px(25)+','+z+' Z"/>';
+    s+='<polyline class="g-line" points="'+pts.join(' ')+'"/>';
+    if(m.payback!=null){
+      var X=px(m.payback),anchor=X>W*0.6?'end':'start',tx=anchor==='end'?X-6:X+6;
+      s+='<line class="g-pay" x1="'+X+'" x2="'+X+'" y1="'+T+'" y2="'+(H-B)+'"/><circle class="g-dot" cx="'+X+'" cy="'+z+'" r="5"/>';
+      s+='<text class="g-paytext" x="'+tx+'" y="'+(T+10)+'" text-anchor="'+anchor+'">Payback '+m.payback.toFixed(1)+' yr</text>';
+    }
+    s+='<text class="g-end" x="'+(W-R-4)+'" y="'+(py(m.cum[25])-8)+'" text-anchor="end">'+cmp(m.cum[25])+'</text>';
+    return s+'</svg>';
+  }
+
+  function row(k,v,cls){return '<dt'+(cls==='strong'?' class="strong"':'')+'>'+k+'</dt><dd class="'+(cls||'')+'">'+v+'</dd>'}
+
+  function render(){
+    var p=read(),m=model(p),res=seg==='res';
+    $('err').hidden=true;
+    if(m.error){$('err').textContent=m.error;$('err').hidden=false;$('out').hidden=true;return}
+    $('out').hidden=false;
+    var note=$('note');
+    if(m.roofLimited){
+      note.hidden=false;
+      note.textContent='Your roof area limits the system to '+num(m.kw,1)+' kW. Covering '+Math.round(p.offset*100)+'% of usage would need about '+num(m.wanted,1)+' kW.';
+    }else note.hidden=true;
+
+    $('tSize').textContent=num(m.kw,1)+' kW';
+    $('tSizeS').textContent='About '+m.panels+' panels, '+num(m.G1)+' kWh a year';
+    $('tPay').textContent=cmp(m.net);
+    $('tPayS').textContent=m.subsidy>0?'After '+inr(m.subsidy)+' subsidy':'Project cost '+cmp(m.gross);
+    $('tBack').textContent=yrs(m.payback);
+    $('tBackS').textContent='25-year net gain '+cmp(m.gain);
+    $('chart').innerHTML=chart(m);
+
+    var h='';
+    h+=row('Monthly units used',num(m.U)+' kWh');
+    h+=row('Monthly bill today',inr(m.billNow));
+    h+=row('Monthly bill with solar (year 1)',inr(m.billAfter));
+    h+=row('Average saving per month (year 1)',inr(m.S1/12),'pos');
+    h+=row('Panels',m.panels+' × '+num(p.panelW)+' Wp');
+    h+=row('Roof area needed',num(m.area)+' sq ft');
+    h+=row('Cost per kW used',inr(m.perKw));
+    h+=row('Project cost',inr(m.gross));
+    if(m.subsidy>0)h+=row('Central subsidy','−'+inr(m.subsidy),'pos');
+    h+=row('You pay',inr(m.net),'strong');
+    h+=row('Year-1 bill saving',inr(m.S1));
+    if(!res&&p.adOn)h+=row('Tax saving from depreciation (25 yrs)',inr(m.taxTotal),'pos');
+    h+=row('25-year net gain',sgn(m.gain),m.gain>=0?'pos':'neg');
+    h+=row('Return rate (IRR)',m.irr==null?'n/a':(m.irr*100).toFixed(1)+'%');
+    h+=row('Solar cost per unit over 25 yrs','₹'+m.lcoe.toFixed(2)+' vs grid ₹'+m.avgRate.toFixed(2));
+    h+=row('CO₂ avoided per year',num(m.co2,1)+' tonnes');
+    $('kv').innerHTML=h;
+
+    var nm=$('name').value.trim()||'Customer';
+    $('quote').value=[
+      'Gensolar solar estimate for '+nm+', '+$('city').value+', '+STATES[state].name,
+      'Segment: '+SEG[seg].label,
+      'System: '+num(m.kw,1)+' kW (about '+m.panels+' panels of '+num(p.panelW)+' Wp, '+num(m.area)+' sq ft of roof)',
+      'Yearly generation: '+num(m.G1)+' kWh',
+      'Project cost: '+inr(m.gross)+(m.subsidy>0?'  |  Subsidy: '+inr(m.subsidy):'')+'  |  You pay: '+inr(m.net),
+      'Monthly bill: '+inr(m.billNow)+' now, about '+inr(m.billAfter)+' with solar',
+      'Payback: '+yrs(m.payback)+'  |  25-year net gain: '+sgn(m.gain),
+      'Indicative estimate. Final quote after site survey.'
+    ].join('\n');
+  }
+
+  function applyVisibility(){
+    document.querySelectorAll('[data-only]').forEach(function(el){
+      el.hidden=el.dataset.only.split(' ').indexOf(seg)<0;
+    });
+  }
+  function labels(){
+    $('amountLabel').textContent=$('mode').value==='units'?'Average monthly units (kWh)':'Average monthly bill (₹)';
+  }
+  function setSeg(s){
+    seg=s;
+    document.querySelectorAll('.seg button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.seg===s?'true':'false')});
+    var d=SEG[s];
+    $('mode').value='bill';prevMode='bill';labels();
+    $('amount').value=d.amount;$('roof').value=d.roof;setRate();
+    applyVisibility();render();
+  }
+  function setState(s){
+    state=s;
+    fillCities();buildSlabs();setRate();
+    $('basis').textContent=STATES[s].basis;
+    render();
+  }
+
+  document.querySelectorAll('.seg button').forEach(function(b){b.addEventListener('click',function(){setSeg(b.dataset.seg)})});
+  $('state').addEventListener('change',function(){setState($('state').value)});
+  $('city').addEventListener('change',function(){$('gen').value=STATES[state].cities[$('city').value]||1450});
+  var prevMode='bill';
+  $('mode').addEventListener('change',function(){
+    var now=$('mode').value;
+    labels();
+    var cur=val('amount'),p=read(),res=seg==='res';
+    if(cur>0&&now!==prevMode){
+      if(now==='units'){
+        var units=res?unitsFor(cur,p.rates):(p.rate>0?cur/p.rate:0);
+        $('amount').value=Math.round(units);
+      }else{
+        $('amount').value=Math.round(res?billFor(cur,p.rates):cur*p.rate);
+      }
+    }
+    prevMode=now;
+  });
+  $('offset').addEventListener('input',function(){$('offsetOut').textContent=$('offset').value+'%'});
+  document.addEventListener('input',function(){$('chip').hidden=true;render()});
+  document.addEventListener('change',render);
+
+  $('copy').addEventListener('click',function(){
+    var ta=$('quote'),msg=$('copied');
+    function say(t){msg.textContent=t;msg.hidden=false;setTimeout(function(){msg.hidden=true},2500)}
+    try{
+      navigator.clipboard.writeText(ta.value).then(function(){say('Copied')},function(){ta.select();say('Selected. Copy it from here.')});
+    }catch(e){ta.select();say('Selected. Copy it from here.')}
+  });
+
+  (function(){
+    var n=window.__gsUser;
+    if(n)$('who').textContent='Signed in as '+n;
+    $('logout').textContent=n?'Sign out':'Back to welcome';
+    $('logout').addEventListener('click',function(){
+      try{sessionStorage.removeItem('gs_user');sessionStorage.removeItem('gs_guest')}catch(e){}
+      location.href='index.html';
+    });
+  })();
+  applyVisibility();
+  setState('TG');
+})();
+</script>
+
+</body>
+</html>
