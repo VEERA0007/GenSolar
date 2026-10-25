@@ -50,10 +50,15 @@ try {
 
   await page.locator('.scrim').click({ position: { x: 8, y: 8 } });
   await page.waitForTimeout(150);
+  page.once('dialog', dialog => { check(dialog.message().includes('Solar Solutions') && dialog.message().includes('login'), 'Solar Solutions shows a login-required popup'); dialog.dismiss(); });
   await page.locator('.cards .card').first().click();
   await page.waitForTimeout(200);
-  check(await page.locator('#app').isVisible(), 'Explore Solar Solutions opens the existing estimator workspace');
-  check(await page.locator('#view-est').isVisible(), 'Estimator view is shown after guest exploration');
+  check(await page.locator('#authGate').isVisible(), 'Dismissing the feature login popup keeps the user on the welcome screen');
+  // Exercise the guest estimator separately; feature cards are intentionally login-gated.
+  await page.evaluate(() => { window.exploreGuest(); });
+  await page.waitForTimeout(200);
+  check(await page.locator('#app').isVisible(), 'Guest estimator workspace can still be opened');
+  check(await page.locator('#view-est').isVisible(), 'Estimator view is shown for guest exploration');
   check(await page.locator('#amount').count() === 1 && await page.locator('#state').count() === 1,
     'Estimator has usage and state inputs');
   check(await page.locator('#out').count() === 1, 'Estimator results container is present');
