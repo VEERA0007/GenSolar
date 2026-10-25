@@ -36,11 +36,12 @@ try {
   console.log('Startup JS errors:', JSON.stringify(errors));
   console.log('Console errors:', JSON.stringify(consoleErrors));
 
-  const photoStates = await page.locator('.hero .photo-right, .hero .photo-bottom').evaluateAll(els =>
+  const photoStates = await page.locator('.hero .photo-bottom').evaluateAll(els =>
     els.map(el => ({ src: el.getAttribute('src'), loaded: el.complete && el.naturalWidth > 0, width: el.naturalWidth }))
   );
-  check(photoStates.length === 2 && photoStates.every(x => x.loaded),
-    'Both bundled welcome-screen solar images load: ' + JSON.stringify(photoStates));
+  check(photoStates.length === 1 && photoStates.every(x => x.loaded)
+    && await page.locator('.hero .photo-right').count() === 0,
+    'One bundled welcome-screen solar background image loads: ' + JSON.stringify(photoStates));
 
   await page.getByRole('button', { name: /login/i }).click();
   check(await page.locator('#loginForm').isVisible(), 'Login button opens the real OTP login sheet');
