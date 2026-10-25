@@ -174,6 +174,12 @@ html,body{margin:0;height:100%;background:#fff}
   .wgate .benefits { gap:4px; }
 }
 
+
+/* Branded feature-login dialog; avoids Android's default file:// JavaScript alert */
+.feature-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(5,25,19,.55);}
+.feature-modal[hidden]{display:none!important}.feature-modal .feature-box{width:min(100%,380px);background:#fff;border-radius:22px;padding:26px 22px 18px;box-shadow:0 18px 60px rgba(0,0,0,.25);color:#123c30;}
+.feature-modal h2{font-size:22px;line-height:1.2;margin:0 0 10px;color:#075b43}.feature-modal p{font-size:15px;line-height:1.5;margin:0 0 22px;color:#344b44}.feature-modal .feature-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}.feature-modal button{min-height:44px;border-radius:12px;padding:10px 18px;font-weight:700;border:1px solid #b8d8ca;background:#eef7f2;color:#075b43}.feature-modal button.primary{background:#075b43;color:#fff;border-color:#075b43}
+@media(min-width:600px){.feature-modal{padding:32px}}
 </style></head><body>
 <div id="splash"><img src="gensolar_app_icon.png" alt="GenSolar"><p>POWERING A GREENER TOMORROW</p></div><script>setTimeout(function(){var e=document.getElementById("splash");if(e){e.classList.add("out");setTimeout(function(){e.remove()},500)}},1600)</script>
 <div id="authGate" class="wgate"><main class="wapp">
@@ -244,6 +250,7 @@ html,body{margin:0;height:100%;background:#fff}
     </div>
   </section>
 </main>
+<div id="featureLoginModal" class="feature-modal" role="dialog" aria-modal="true" aria-labelledby="featureLoginTitle" hidden><div class="feature-box"><h2 id="featureLoginTitle">Login required</h2><p id="featureLoginMessage">Sign in with your mobile number to continue.</p><div class="feature-actions"><button type="button" id="featureCancel">Cancel</button><button type="button" class="primary" id="featureLoginNow">Login</button></div></div></div>
 <div id="loginForm" class="wl hide-auth"><div class="scrim" onclick="backToRoles()"></div>
 <div class="signin" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
  <h2 id="loginTitle">Welcome back</h2>
@@ -1042,10 +1049,24 @@ function model(p){
 
   /* ---------- welcome + login (called from the welcome page) ---------- */
   window.requestFeatureLogin=function(feature){
-    if(session&&session.mode==='user'){toast(feature+' workspace will open after sign-in permissions are checked.');location.hash='#est';return}
-    var ok=window.confirm(feature+' requires login. Sign in with your mobile number to continue.');
-    if(ok){loginPending=true;location.hash='#login';showSheet(true)}
+    if(session&&session.mode==='user'){
+      if(role()==='guest'){showFeatureLogin(feature);return;}
+      toast(feature+' selected. Your account permissions will be checked.');
+      location.hash=feature==='Engineering'?'#engineering':'#est';return;
+    }
+    showFeatureLogin(feature);
   };
+  function showFeatureLogin(feature){
+    var modal=$('featureLoginModal');if(!modal)return;
+    $('featureLoginTitle').textContent=feature+' requires login';
+    $('featureLoginMessage').textContent='Sign in with your mobile number to access '+feature+'.';
+    modal.hidden=false;modal.dataset.feature=feature;
+  }
+  function closeFeatureLogin(){var modal=$('featureLoginModal');if(modal)modal.hidden=true;}
+  $('featureCancel').addEventListener('click',closeFeatureLogin);
+  $('featureLoginNow').addEventListener('click',function(){closeFeatureLogin();loginPending=true;location.hash='#login';showSheet(true)});
+  $('featureLoginModal').addEventListener('click',function(e){if(e.target===$('featureLoginModal'))closeFeatureLogin()});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeFeatureLogin()});
   window.openLogin=function(){
     if(session&&session.mode==='user'){location.hash='#est';return}
     loginPending=true;location.hash='#login';
