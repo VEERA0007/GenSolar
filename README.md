@@ -1,6 +1,10 @@
-# GenSolar Pro — complete Android application
+# GenSolar Pro — Android application source
 
 This repository is populated as a clean source tree from the latest GenSolar Pro 1.4 Android app baseline. The Android project files are not taken from this repository's earlier commits. The latest welcome screen, splash resources, logo assets, and visual styles are preserved.
+
+## Current completion status
+
+The Android app source includes Firebase phone OTP and a Firestore lead-sync bridge. Before using real customer information, publish the included Firestore rules, assign employee roles and organization IDs, and test sign-in and cross-device access with sample accounts. Browser OTP/cloud sync is not implemented; browser leads remain local. A successful debug build is not a production release.
 
 ## Android project
 
