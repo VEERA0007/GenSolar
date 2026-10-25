@@ -27,10 +27,14 @@ const check = (condition, message) => { if (!condition) failures.push(message); 
 try {
   const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const errors = [];
-  page.on('pageerror', e => errors.push(e.message));
+  const consoleErrors = [];
+  page.on('pageerror', e => errors.push(e.stack || e.message));
+  page.on('console', msg => { if (msg.type() === 'error') consoleErrors.push(msg.text()); });
   await page.goto('http://127.0.0.1:4179/', { waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(2200);
   check(await page.locator('#authGate').isVisible(), 'Welcome screen is visible on a mobile-sized viewport');
+  console.log('Startup JS errors:', JSON.stringify(errors));
+  console.log('Console errors:', JSON.stringify(consoleErrors));
 
   const photoStates = await page.locator('.hero .photo-right, .hero .photo-bottom').evaluateAll(els =>
     els.map(el => ({ src: el.getAttribute('src'), loaded: el.complete && el.naturalWidth > 0, width: el.naturalWidth }))
