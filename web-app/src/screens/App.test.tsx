@@ -9,11 +9,12 @@ describe('GenSolar entry flow', () => {
     fireEvent.click(screen.getByRole('button', { name: /^login/i }));
     expect(screen.getByRole('heading', { name: /login to gensolar/i })).toBeTruthy();
   });
+
   it('allows selecting a role and opening the estimator', () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: /^login/i }));
     fireEvent.change(screen.getByLabelText(/mobile number/i), { target: { value: 'demo@example.com' } });
-    fireEvent.click(screen.getByRole('button', { name: /continue/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^continue\s*→$/i }));
     fireEvent.click(screen.getByRole('button', { name: /sales manager/i }));
     expect(screen.getByRole('button', { name: /sales manager/i }).getAttribute('aria-pressed')).toBe('true');
     fireEvent.click(screen.getByRole('button', { name: /^next/i }));
