@@ -149,20 +149,16 @@ html,body{margin:0;height:100%;background:#fff}
   mask-image:none !important;
   mix-blend-mode:normal;
 }
-.wgate .hero .photo-right {
-  z-index:0;
-  width:44%;
-  height:auto;
-  left:56%;
-  top:42%;
-}
+.wgate .hero .photo-right {display:none !important}
 .wgate .hero .photo-bottom {
   z-index:0;
   width:100%;
-  height:auto;
+  height:100%;
   left:0;
-  top:60%;
+  top:0;
+  object-fit:cover;
 }
+.wgate .hero .logo {z-index:1}
 .wgate .hero .logo { z-index:3; }
 .wgate .hero .abs { z-index:2; }
 .wgate .hero::after { z-index:1; pointer-events:none; }
@@ -184,7 +180,6 @@ html,body{margin:0;height:100%;background:#fff}
 <div id="splash"><img src="gensolar_app_icon.png" alt="GenSolar"><p>POWERING A GREENER TOMORROW</p></div><script>setTimeout(function(){var e=document.getElementById("splash");if(e){e.classList.add("out");setTimeout(function(){e.remove()},500)}},1600)</script>
 <div id="authGate" class="wgate"><main class="wapp">
   <section class="hero" aria-label="Welcome">
-    <img class="photo-right" src="hero-right.jpg" alt="" width="369" height="250">
     <img class="photo-bottom" src="hero-bottom.jpg" alt="" width="839" height="224">
     <img class="logo" src="logo-banner.png" alt="Gensolar" width="839" height="150">
 
