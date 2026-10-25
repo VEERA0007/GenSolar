@@ -57,6 +57,10 @@ try {
   check(await page.locator('#amount').count() === 1 && await page.locator('#state').count() === 1,
     'Estimator has usage and state inputs');
   check(await page.locator('#out').count() === 1, 'Estimator results container is present');
+  await page.locator('#amount').fill('45000');
+  await page.waitForTimeout(100);
+  check(await page.locator('#out').isVisible(), 'Estimator produces a visible result after changing the monthly usage input');
+  check((await page.locator('#tSize').innerText()).trim().length > 0, 'Estimator calculates and displays a system-size result');
 
   check(errors.length === 0, 'No uncaught JavaScript errors: ' + (errors.join(' | ') || 'none'));
 } finally {
