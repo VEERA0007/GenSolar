@@ -838,6 +838,20 @@ function model(p){
   /* ---------- leads ---------- */
   function leads(){return lsGet('gs_leads_v2',[])}
   function saveLeads(a){return lsSet('gs_leads_v2',a)}
+  function cloudSaveLead(l){try{if(window.GenSolarLeads&&session&&session.mode==='user')window.GenSolarLeads.saveLead(JSON.stringify(l))}catch(e){toast('Cloud sync could not start. Your phone copy is unchanged.')}}
+  function cloudDeleteLead(id){try{if(window.GenSolarLeads&&session&&session.mode==='user')window.GenSolarLeads.deleteLead(String(id))}catch(e){toast('Cloud delete could not start.')}}
+  function cloudLoadLeads(){try{if(window.GenSolarLeads&&session&&session.mode==='user')window.GenSolarLeads.loadLeads()}catch(e){toast('Cloud leads could not load. Your phone records remain available.')}}
+  window.onGenSolarCloudLeads=function(rows){
+    if(!Array.isArray(rows))return;
+    var local=leads(),merged=[],seen={};
+    rows.forEach(function(l){if(!l||!l.id)return;merged.push(l);seen[l.id]=true});
+    local.forEach(function(l){if(l&&l.id&&!seen[l.id])merged.push(l)});
+    merged.sort(function(a,b){return Number(b.ts||b.createdAt||0)-Number(a.ts||a.createdAt||0)});
+    saveLeads(merged);renderLeads();
+  };
+  window.onGenSolarCloudLeadSaved=function(){};
+  window.onGenSolarCloudLeadDeleted=function(){};
+  window.onGenSolarCloudError=function(message){toast(message||'Cloud sync failed. Your phone records remain available.')};
   function myLeads(){
     var all=leads();
     if(isCompany())return all;
@@ -847,7 +861,7 @@ function model(p){
   function addLead(l){
     var a=leads();l.id='L'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
     l.ts=Date.now();l.status=l.status||'New';l.notes=l.notes||[];l.owner=session&&(session.phone||session.uid);
-    a.unshift(l);return saveLeads(a)?l:null;
+    a.unshift(l);if(!saveLeads(a))return null;cloudSaveLead(l);return l;
   }
   function renderLeads(){
     var comp=isCompany();
@@ -878,17 +892,17 @@ function model(p){
   $('leadList').addEventListener('change',function(e){
     if(e.target.getAttribute('data-act')!=='status')return;
     var id=e.target.closest('.ld').getAttribute('data-id'),a=leads();
-    a.forEach(function(l){if(l.id===id)l.status=e.target.value});saveLeads(a);renderLeads();toast('Status updated');
+    a.forEach(function(l){if(l.id===id){l.status=e.target.value;cloudSaveLead(l)}});saveLeads(a);renderLeads();toast('Status updated');
   });
   $('leadList').addEventListener('click',function(e){
     var b=e.target.closest('[data-act]');if(!b)return;
     var box=b.closest('.ld'),id=box.getAttribute('data-id'),a=leads(),act=b.getAttribute('data-act');
     if(act==='del'){
       if(b.getAttribute('data-sure')!=='1'){b.setAttribute('data-sure','1');b.textContent='Tap again to delete';return}
-      saveLeads(a.filter(function(l){return l.id!==id}));renderLeads();toast('Deleted');
+      saveLeads(a.filter(function(l){return l.id!==id}));cloudDeleteLead(id);renderLeads();toast('Deleted');
     }else if(act==='note'){
       var inp=box.querySelector('[data-note]'),t=inp.value.trim();if(!t){toast('Type a note first');return}
-      a.forEach(function(l){if(l.id===id)l.notes.push({ts:Date.now(),text:t})});saveLeads(a);renderLeads();toast('Note added');
+      a.forEach(function(l){if(l.id===id){l.notes.push({ts:Date.now(),text:t});cloudSaveLead(l)}});saveLeads(a);renderLeads();toast('Note added');
     }else if(act==='share'){
       var l=a.filter(function(x){return x.id===id})[0];if(l)shareText(l.quote)
     }
@@ -1056,6 +1070,7 @@ function model(p){
   window.onGenSolarAuthError=function(m){$('sendOtpButton').disabled=false;authStatus(m||'Authentication failed.',true)};
   window.onGenSolarAuthSuccess=function(uid,r,phone){
     session={mode:'user',uid:uid,role:normRole(r),phone:last10(phone)};
+    cloudLoadLeads();
     if(location.hash==='#login'){history.replaceState(null,'','#est');route();toast('Signed in')}
     else paintWelcome();
   };
