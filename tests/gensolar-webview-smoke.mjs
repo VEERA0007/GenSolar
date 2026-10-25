@@ -50,10 +50,12 @@ try {
 
   await page.locator('.scrim').click({ position: { x: 8, y: 8 } });
   await page.waitForTimeout(150);
-  page.once('dialog', dialog => { check(dialog.message().includes('Solar Solutions') && dialog.message().includes('login'), 'Solar Solutions shows a login-required popup'); dialog.dismiss(); });
   await page.locator('.cards .card').first().click();
-  await page.waitForTimeout(200);
-  check(await page.locator('#authGate').isVisible(), 'Dismissing the feature login popup keeps the user on the welcome screen');
+  await page.waitForTimeout(100);
+  check(await page.locator('#featureLoginModal').isVisible(), 'Solar Solutions shows a branded login-required popup');
+  check((await page.locator('#featureLoginMessage').innerText()).includes('Solar Solutions'), 'Feature popup names the selected service');
+  await page.locator('#featureCancel').click();
+  check(await page.locator('#featureLoginModal').isHidden(), 'Cancel closes the feature popup without leaving the welcome screen');
   // Exercise the guest estimator separately; feature cards are intentionally login-gated.
   await page.evaluate(() => { window.exploreGuest(); });
   await page.waitForTimeout(200);
