@@ -965,6 +965,8 @@ function model(p){
     var docs={};document.querySelectorAll('[data-eng-doc]').forEach(function(el){docs[el.getAttribute('data-eng-doc')]=el.checked});
     lsSet('gs_engineering_docs_v1',docs);
   }
+  /* Keep formatting local to this script scope; the estimator formatter lives in a separate IIFE. */
+  function num(v,d){var n=Number(v);return (isFinite(n)?n:0).toLocaleString('en-IN',{maximumFractionDigits:d==null?0:d})}
   function engVal(id){var el=$(id),v=el?parseFloat(el.value):0;return isFinite(v)?v:0}
   function engStat(label,value,sub){return '<div class="stat"><span>'+label+'</span><b>'+value+'</b>'+(sub?'<small>'+sub+'</small>':'')+'</div>'}
   function renderEngineering(){
