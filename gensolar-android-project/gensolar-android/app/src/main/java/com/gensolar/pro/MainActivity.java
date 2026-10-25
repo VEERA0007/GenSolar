@@ -279,6 +279,8 @@ public class MainActivity extends Activity {
                 } else {
                     data.put("ownerUid", user.getUid());
                     data.put("customerUid", user.getUid());
+                    data.put("organizationId", "");
+                    data.put("assignedRepUid", "");
                 }
                 final String finalId = id;
                 db.collection("leads").document(id).set(data, SetOptions.merge())
