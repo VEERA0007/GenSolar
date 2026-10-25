@@ -137,6 +137,43 @@ html,body{margin:0;height:100%;background:#fff}
 #splash p{margin:0;font-size:11px;font-weight:700;letter-spacing:.3em;color:#10261f;text-align:center}
 #splash.out{opacity:0;pointer-events:none}
 
+
+/* GenSolar mobile rendering + navigation reliability patch (v1.5) */
+.wgate .hero .photo-right,
+.wgate .hero .photo-bottom {
+  display:block !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  object-fit:cover;
+  -webkit-mask-image:none !important;
+  mask-image:none !important;
+  mix-blend-mode:normal;
+}
+.wgate .hero .photo-right {
+  z-index:0;
+  width:44%;
+  height:auto;
+  left:56%;
+  top:42%;
+}
+.wgate .hero .photo-bottom {
+  z-index:0;
+  width:100%;
+  height:auto;
+  left:0;
+  top:60%;
+}
+.wgate .hero .logo { z-index:3; }
+.wgate .hero .abs { z-index:2; }
+.wgate .hero::after { z-index:1; pointer-events:none; }
+.wgate .sheet { position:relative; z-index:4; }
+.wgate #openLogin, .wgate #explore { touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+@media (max-width:360px) {
+  .wgate .hero { height:calc(var(--u)*150); }
+  .wgate .sheet { padding-left:calc(var(--u)*4.5); padding-right:calc(var(--u)*4.5); }
+  .wgate .benefits { gap:4px; }
+}
+
 </style></head><body>
 <div id="splash"><img src="gensolar_app_icon.png" alt="GenSolar"><p>POWERING A GREENER TOMORROW</p></div><script>setTimeout(function(){var e=document.getElementById("splash");if(e){e.classList.add("out");setTimeout(function(){e.remove()},500)}},1600)</script>
 <div id="authGate" class="wgate"><main class="wapp">
@@ -193,10 +230,10 @@ html,body{margin:0;height:100%;background:#fff}
       </g>
     </svg>
 
-    <button class="btn primary" id="openLogin" type="button" onclick="openLogin()" style="position:relative;z-index:1">Login
+    <button class="btn primary" id="openLogin" type="button" style="position:relative;z-index:1">Login
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h17M14 5l7 7-7 7" fill="none" stroke="#fff" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <a class="btn ghost" id="explore" href="#" onclick="exploreWebsite();return false" style="position:relative;z-index:1">Explore GenSolar
+    <a class="btn ghost" id="explore" href="#" style="position:relative;z-index:1">Explore GenSolar
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="#0a6b4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
 
@@ -1027,6 +1064,11 @@ function model(p){
   }
   window.onGenSolarLastCrash=function(msg){var d=document.createElement('div');d.style.cssText='position:fixed;inset:0;z-index:9000;background:rgba(3,40,30,.7);display:flex;align-items:center;justify-content:center;padding:18px';d.innerHTML='<div style="background:#fff;border-radius:16px;max-width:460px;width:100%;max-height:85%;overflow:auto;padding:18px;font:14px system-ui,sans-serif;color:#10261f"><b style="font-size:16px">The app closed unexpectedly last time</b><p style="margin:8px 0">Please send a screenshot of this to support so it can be fixed.</p><pre style="white-space:pre-wrap;word-break:break-word;font-size:11px;background:#f4faf7;border-radius:8px;padding:10px"></pre><button style="width:100%;height:44px;border:0;border-radius:10px;background:#066a51;color:#fff;font-weight:700">Close</button></div>';d.querySelector('pre').textContent=String(msg);d.querySelector('button').onclick=function(){d.remove()};document.body.appendChild(d)};
 
+  /* Bind welcome controls explicitly for WebView and browser touch events. */
+  var welcomeLoginButton=$('openLogin');
+  if(welcomeLoginButton)welcomeLoginButton.addEventListener('click',function(e){e.preventDefault();window.openLogin();});
+  var welcomeExploreButton=$('explore');
+  if(welcomeExploreButton)welcomeExploreButton.addEventListener('click',function(e){e.preventDefault();window.exploreWebsite();});
   paintAvatar();route();
 })();
 </script>
