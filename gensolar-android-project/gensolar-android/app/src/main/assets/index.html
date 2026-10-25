@@ -193,10 +193,10 @@ html,body{margin:0;height:100%;background:#fff}
       </g>
     </svg>
 
-    <button class="btn primary" id="openLogin" type="button" onclick="openLogin()" style="position:relative;z-index:1">Login
+    <button class="btn primary" id="openLogin" type="button" onclick="document.getElementById('loginForm').classList.remove('hide-auth');document.getElementById('otpFields').classList.add('hide-auth');location.hash='#login';return false" style="position:relative;z-index:1">Login
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h17M14 5l7 7-7 7" fill="none" stroke="#fff" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
-    <a class="btn ghost" id="explore" href="#" onclick="exploreWebsite();return false" style="position:relative;z-index:1">Explore GenSolar
+    <a class="btn ghost" id="explore" href="#" onclick="if(window.GenSolarNative&&typeof window.GenSolarNative.openUrl==='function'){window.GenSolarNative.openUrl('https://m.indiamart.com/genesispoweronics')}else{window.location.href='https://m.indiamart.com/genesispoweronics'};return false" style="position:relative;z-index:1">Explore GenSolar
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="#0a6b4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </a>
 
