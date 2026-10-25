@@ -1,0 +1,66 @@
+import { chromium } from 'playwright';
+import { createServer } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { extname, resolve, normalize, sep } from 'node:path';
+
+const root = resolve('gensolar-android-project/gensolar-android/app/src/main/assets');
+const mime = { '.html':'text/html; charset=utf-8', '.jpg':'image/jpeg', '.png':'image/png', '.css':'text/css' };
+const server = createServer(async (req, res) => {
+  try {
+    const pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
+    const relative = normalize(pathname === '/' ? '/index.html' : pathname);
+    const file = resolve(root, '.' + relative);
+    if (!file.startsWith(root + sep) && file !== resolve(root, 'index.html')) {
+      res.writeHead(403); res.end('Forbidden'); return;
+    }
+    const body = await readFile(file);
+    res.writeHead(200, { 'content-type': mime[extname(file)] || 'application/octet-stream' });
+    res.end(body);
+  } catch {
+    res.writeHead(404); res.end('Not found');
+  }
+});
+await new Promise(resolveListen => server.listen(4179, '127.0.0.1', resolveListen));
+const browser = await chromium.launch({ headless: true });
+const failures = [];
+const check = (condition, message) => { if (!condition) failures.push(message); else console.log('PASS:', message); };
+try {
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const errors = [];
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto('http://127.0.0.1:4179/', { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(2200);
+  check(await page.locator('#authGate').isVisible(), 'Welcome screen is visible on a mobile-sized viewport');
+
+  const photoStates = await page.locator('.hero .photo-right, .hero .photo-bottom').evaluateAll(els =>
+    els.map(el => ({ src: el.getAttribute('src'), loaded: el.complete && el.naturalWidth > 0, width: el.naturalWidth }))
+  );
+  check(photoStates.length === 2 && photoStates.every(x => x.loaded),
+    'Both bundled welcome-screen solar images load: ' + JSON.stringify(photoStates));
+
+  await page.getByRole('button', { name: /login/i }).click();
+  check(await page.locator('#loginForm').isVisible(), 'Login button opens the real OTP login sheet');
+  await page.locator('#sendOtpButton').click();
+  check((await page.locator('#authMessage').innerText()).includes('valid 10-digit'),
+    'OTP form validates an empty/invalid mobile number instead of silently doing nothing');
+
+  await page.locator('.scrim').click({ position: { x: 8, y: 8 } });
+  await page.waitForTimeout(150);
+  await page.locator('.cards .card').first().click();
+  await page.waitForTimeout(200);
+  check(await page.locator('#app').isVisible(), 'Explore Solar Solutions opens the existing estimator workspace');
+  check(await page.locator('#view-est').isVisible(), 'Estimator view is shown after guest exploration');
+  check(await page.locator('#amount').count() === 1 && await page.locator('#state').count() === 1,
+    'Estimator has usage and state inputs');
+  check(await page.locator('#out').count() === 1, 'Estimator results container is present');
+
+  check(errors.length === 0, 'No uncaught JavaScript errors: ' + (errors.join(' | ') || 'none'));
+} finally {
+  await browser.close();
+  await new Promise(resolveClose => server.close(resolveClose));
+}
+if (failures.length) {
+  console.error('\nFAILURES:\n- ' + failures.join('\n- '));
+  process.exit(1);
+}
+console.log('\nAll GenSolar WebView smoke checks passed.');
