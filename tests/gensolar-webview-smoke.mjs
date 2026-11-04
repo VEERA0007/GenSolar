@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, resolve, normalize, sep } from 'node:path';
 
 const root = resolve('gensolar-android-project/gensolar-android/app/src/main/assets');
-const mime = { '.html':'text/html; charset=utf-8', '.jpg':'image/jpeg', '.png':'image/png', '.css':'text/css' };
+const mime = { '.html':'text/html; charset=utf-8', '.jpg':'image/jpeg', '.png':'image/png', '.css':'text/css', '.js':'text/javascript; charset=utf-8' };
 const server = createServer(async (req, res) => {
   try {
     const pathname = decodeURIComponent(new URL(req.url, 'http://127.0.0.1').pathname);
@@ -69,6 +69,35 @@ try {
   await page.waitForTimeout(100);
   check(await page.locator('#out').isVisible(), 'Estimator produces a visible result after changing the monthly usage input');
   check((await page.locator('#tSize').innerText()).trim().length > 0, 'Estimator calculates and displays a system-size result');
+
+
+  // EPC auto-design: both rooftop and ground-mounted paths must work inside the existing Engineering/EPC tab.
+  await page.locator('[data-tab="engineering"]').click();
+  await page.waitForTimeout(150);
+  check(await page.locator('#epcAutoDesign').isVisible(), 'EPC auto-design workspace is embedded in the existing app');
+  check(await page.locator('[data-epc-mode="rooftop"]').isVisible()
+    && await page.locator('[data-epc-mode="ground"]').isVisible(),
+    'Rooftop and ground-mounted design modes are available');
+  await page.locator('#epcKw').fill('20');
+  await page.locator('#epcWp').fill('615');
+  await page.locator('#epcLength').fill('20');
+  await page.locator('#epcWidth').fill('40');
+  await page.locator('#epcLat').fill('17.385');
+  await page.locator('#epcLon').fill('78.4867');
+  await page.locator('#epcGenerate').click();
+  check((await page.locator('#epcResults').innerText()).includes('20.3 kWp'),
+    'EPC calculates installed DC capacity from the fitted panel quantity');
+  check((await page.locator('#epcLayout svg').count()) === 1,
+    'EPC generates a dimensioned SVG panel layout');
+  check((await page.locator('#epcSchedule table').count()) === 1,
+    'EPC generates a preliminary BOM and cable schedule');
+  await page.locator('[data-epc-mode="ground"]').click();
+  check((await page.locator('#epcTitle').innerText()).includes('Ground-Mounted'),
+    'Ground-mounted mode switches the design workflow');
+  await page.locator('#epcGenerate').click();
+  check((await page.locator('#epcLayout svg').count()) === 1,
+    'Ground-mounted mode also generates a panel layout');
+  check(errors.length === 0, 'No uncaught JavaScript errors after EPC design: ' + (errors.join(' | ') || 'none'));
 
   check(errors.length === 0, 'No uncaught JavaScript errors: ' + (errors.join(' | ') || 'none'));
 } finally {

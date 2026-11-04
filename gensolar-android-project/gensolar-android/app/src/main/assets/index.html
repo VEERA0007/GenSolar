@@ -380,8 +380,90 @@ html,body{margin:0;height:100%;background:#fff}
     </section>
 
     <section id="view-engineering" class="page" hidden>
-      <h1>Engineering &amp; site design</h1>
+      <h1>EPC Engineering &amp; Site Design</h1>
       <p class="lede">Use this workspace for preliminary panel sizing, roof fit, orientation, inverter sizing and site-survey readiness. Enter solar-resource figures from a verified assessment; this page does not fetch live satellite data.</p>
+      <section id="epcAutoDesign" class="epc-workspace" aria-labelledby="epcTitle">
+        <div class="epc-head">
+          <div><span class="epc-kicker">GENSOLAR EPC ENGINEERING</span><h2 id="epcTitle">Site Survey &amp; Auto-Design</h2><p>Rooftop and ground-mounted preliminary design from site inputs, coordinates and customer capacity.</p></div>
+          <span class="epc-status">ENGINEERING PREVIEW</span>
+        </div>
+        <div class="epc-tabs" role="group" aria-label="Project mounting type">
+          <button type="button" class="epc-mode active" data-epc-mode="rooftop">Rooftop</button>
+          <button type="button" class="epc-mode" data-epc-mode="ground">Ground-mounted</button>
+        </div>
+        <div class="epc-grid">
+          <div class="epc-panel">
+            <h3>1. Customer &amp; site details</h3>
+            <div class="epc-fields">
+              <label>Customer / project name<input id="epcCustomer" type="text" placeholder="Customer or plant name"></label>
+              <label>Project segment<select id="epcSegment"><option>Residential</option><option>Commercial</option><option>Industrial</option><option>Utility scale</option></select></label>
+              <label>Latitude<input id="epcLat" type="number" step="any" placeholder="17.3850"></label>
+              <label>Longitude<input id="epcLon" type="number" step="any" placeholder="78.4867"></label>
+              <label>Required DC capacity (kWp)<input id="epcKw" type="number" min="0.1" step="0.1" value="100"></label>
+              <label>Module rating (Wp)<input id="epcWp" type="number" min="100" step="5" value="615"></label>
+              <label>Module width (m)<input id="epcModW" type="number" min="0.5" step="0.001" value="1.134"></label>
+              <label>Module length (m)<input id="epcModL" type="number" min="0.5" step="0.001" value="2.278"></label>
+              <label>Module arrangement<select id="epcOrientation"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label>
+              <label>Array tilt (degrees)<input id="epcTilt" type="number" min="0" max="60" step="1" value="15"></label>
+              <label>Azimuth (degrees; 180 = south)<input id="epcAzimuth" type="number" min="0" max="360" step="1" value="180"></label>
+              <label>Design sun altitude (degrees)<input id="epcSunAlt" type="number" min="5" max="80" step="1" value="30"></label>
+            </div>
+            <div class="epc-actions"><button type="button" class="epc-btn secondary" id="epcMap">Open site on map</button><button type="button" class="epc-btn secondary" id="epcUseEngineering">Copy coordinates from Engineering</button></div>
+          </div>
+          <div class="epc-panel">
+            <h3>2. Site capture &amp; dimensions</h3>
+            <label class="epc-upload">Upload site photos / video<input id="epcMedia" type="file" accept="image/*,video/*" multiple><small>Upload several overlapping roof/site photos or a walkthrough video. Files are previewed on this device; image-to-measurement AI is not enabled yet.</small></label>
+            <div id="epcMediaPreview" class="epc-media-preview">No site media selected</div>
+            <div class="epc-fields">
+              <label>Site / roof length (m)<input id="epcLength" type="number" min="0" step="0.1" placeholder="Measured length"></label>
+              <label>Site / roof width (m)<input id="epcWidth" type="number" min="0" step="0.1" placeholder="Measured width"></label>
+              <label>Boundary setback (m)<input id="epcSetback" type="number" min="0" step="0.1" value="0.5"></label>
+              <label>Walkway / access width (m)<input id="epcWalkway" type="number" min="0" step="0.1" value="0.6"></label>
+              <label>Obstacle / excluded area (m²)<input id="epcObstacles" type="number" min="0" step="0.1" value="0"></label>
+              <label>Maximum support span (m)<input id="epcSupportSpan" type="number" min="0.5" step="0.1" value="1.5"></label>
+            </div>
+            <p class="epc-note">Use surveyed dimensions or a verified scaled drawing. GPS coordinates locate the site but do not measure roof boundaries. Confirm all AI/manual measurements on site.</p>
+          </div>
+          <div class="epc-panel">
+            <h3>3. Electrical design inputs</h3>
+            <div class="epc-fields">
+              <label>Inverter AC capacity (kW)<input id="epcInvKw" type="number" min="0" step="0.1" value="80"></label>
+              <label>Inverter maximum DC voltage (V)<input id="epcMaxDc" type="number" min="100" step="10" value="1100"></label>
+              <label>Module Voc (V)<input id="epcVoc" type="number" min="1" step="0.1" value="52"></label>
+              <label>Voc temperature coefficient (%/°C)<input id="epcVocCoeff" type="number" max="0" step="0.01" value="-0.25"></label>
+              <label>Minimum design temperature (°C)<input id="epcMinTemp" type="number" step="1" value="5"></label>
+              <label>DC route one-way length (m)<input id="epcDcRoute" type="number" min="0" step="1" value="30"></label>
+              <label>AC route one-way length (m)<input id="epcAcRoute" type="number" min="0" step="1" value="25"></label>
+              <label>Cable route allowance (%)<input id="epcCableAllowance" type="number" min="0" max="50" step="1" value="10"></label>
+            </div>
+            <p class="epc-note">String count is a preliminary voltage-limit check. Cable lengths are route estimates only; conductor size, protection and voltage-drop approval require complete electrical inputs and applicable standards.</p>
+          </div>
+          <div class="epc-panel">
+            <h3>4. Generate preliminary design</h3>
+            <div class="epc-actions"><button type="button" class="epc-btn" id="epcGenerate">Generate solar layout &amp; calculations</button><button type="button" class="epc-btn secondary" id="epcReset">Reset design inputs</button></div>
+            <div id="epcWarnings" class="epc-warnings" aria-live="polite">Enter the site dimensions and generate a preliminary design.</div>
+            <div id="epcResults" class="epc-results"></div>
+          </div>
+        </div>
+        <div class="epc-panel epc-output">
+          <div class="epc-output-head"><div><h3>5. Panel layout preview</h3><p>Dimensioned 2D concept plan; not a certified construction drawing.</p></div><div class="epc-actions"><button type="button" class="epc-btn secondary" id="epcExportDxf">Export DXF layout</button><button type="button" class="epc-btn secondary" id="epcExportBom">Share BOM / cable schedule</button><button type="button" class="epc-btn secondary" id="epcExportSld">Share SLD draft</button><button type="button" class="epc-btn secondary" id="epcPrint">Print engineering summary / PDF</button></div></div>
+          <div id="epcLayout" class="epc-layout"><div class="epc-empty">Your panel arrangement will appear here after design generation.</div></div>
+          <div id="epcSchedule" class="epc-schedule"></div>
+        </div>
+        <div class="epc-panel">
+          <h3>6. Engineering review gates</h3>
+          <div class="epc-review">
+            <label><input type="checkbox"> Roof / land boundary and dimensions physically verified</label>
+            <label><input type="checkbox"> Shading, obstructions and seasonal sun path checked</label>
+            <label><input type="checkbox"> Structural capacity, wind loads, foundations and connections approved</label>
+            <label><input type="checkbox"> Module and inverter datasheets / string limits verified</label>
+            <label><input type="checkbox"> Cable sizing, voltage drop, short-circuit and protection checked</label>
+            <label><input type="checkbox"> Earthing, lightning protection and DISCOM requirements checked</label>
+            <label><input type="checkbox"> Engineer reviewed and approved final drawings</label>
+          </div>
+          <p class="epc-note warning">All generated results are preliminary. Do not use this preview as an installation release until a qualified engineer verifies structural, electrical, statutory and site-specific requirements.</p>
+        </div>
+      </section>
       <div class="panel" style="margin-top:14px">
         <h2>Site and system inputs</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px">
@@ -450,7 +532,7 @@ html,body{margin:0;height:100%;background:#fff}
   <nav class="tabbar" aria-label="Main">
     <button type="button" data-tab="est"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>Estimator</button>
     <button type="button" data-tab="leads" id="tabLeads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg><span id="tabLeadsLbl">Leads</span></button>
-    <button type="button" data-tab="engineering" aria-label="Engineering and site design"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="8"/></svg>Engineering</button>
+    <button type="button" data-tab="engineering" aria-label="Engineering and site design"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/><circle cx="12" cy="12" r="8"/></svg>EPC</button>
     <button type="button" data-tab="profile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Profile</button>
   </nav>
 </div>
@@ -1111,4 +1193,5 @@ function model(p){
   paintAvatar();route();
 })();
 </script>
+<script src="epc-auto-design.js"></script>
 </body></html>
