@@ -55,7 +55,7 @@
       s+='<text x="'+(x0+wid*scale/2)+'" y="'+(svgH-12)+'" text-anchor="middle" font-size="11" fill="currentColor">Width '+fmt(wid,2)+' m</text><text x="12" y="'+(y0+len*scale/2)+'" transform="rotate(-90 12 '+(y0+len*scale/2)+')" text-anchor="middle" font-size="11" fill="currentColor">Length '+fmt(len,2)+' m</text><text x="'+(x0+wid*scale-4)+'" y="'+(y0+len*scale-6)+'" text-anchor="end" font-size="10" fill="#0a6b4f">N ↑ (confirm actual north)</text></svg>';
       $('epcLayout').innerHTML=s;
     }else{$('epcLayout').innerHTML='<div class="epc-empty">Enter measured site length and width to generate a dimensioned concept layout.</div>'}
-    var railLines=layoutRows*2,runLength=shownRows*shownCols*panelW,railLength=railLines*runLength/Math.max(1,shownCols),supports=val('epcSupportSpan')>0?railLines*(Math.ceil((shownCols*panelW)/val('epcSupportSpan'))+1):0;
+    var railLines=layoutRows*2,runLength=layoutRows*Math.min(cols,installed)*panelW,supports=val('epcSupportSpan')>0?railLines*(Math.ceil((Math.min(cols,installed)*panelW)/val('epcSupportSpan'))+1):0;
     var ratio=val('epcInvKw')>0?actualKw/val('epcInvKw'):0;
     var results=[
       metric('Target modules',fmt(target,0),'For '+fmt(kw,2)+' kWp target'),
@@ -92,7 +92,7 @@
     var pairs=[['epcCustomer','engSite'],['epcLat','engLat'],['epcLon','engLon'],['epcKw','engCapacity'],['epcWp','engPanelW'],['epcTilt','engTilt'],['epcAzimuth','engAzimuth']];
     pairs.forEach(function(p){if($(p[1]))$(p[1]).value=$(p[0]).value});
     if($('engMount'))$('engMount').value=mode==='ground'?'Ground mounted':'RCC rooftop';
-    if(typeof window.engSave==='function'){try{window.engSave()}catch(e){}}
+    pairs.forEach(function(p){if($(p[1]))$(p[1]).dispatchEvent(new Event('input',{bubbles:true}))});
   }
   function csv(){
     if(!last)return '';
@@ -102,7 +102,7 @@
   function share(t,title){try{if(window.GenSolarNative&&typeof window.GenSolarNative.shareText==='function'){window.GenSolarNative.shareText(String(t));return}}catch(e){}try{if(navigator.share){navigator.share({title:title||'GenSolar EPC',text:t}).catch(function(){});return}}catch(e){}var w=window.open('','_blank');if(w){w.document.write('<pre style="white-space:pre-wrap">'+safe(t)+'</pre>')}else toast('Sharing is not available on this device.')}
   function dxf(){
     if(!last||!last.layoutReady){toast('Generate a design with measured site dimensions first.');return}
-    var lines=['0','SECTION','2','HEADER','9','$INSUNITS','70',' meters','0','ENDSEC','0','SECTION','2','ENTITIES'];
+    var lines=['0','SECTION','2','HEADER','9','$INSUNITS','70','6','0','ENDSEC','0','SECTION','2','ENTITIES'];
     function rect(x,y,w,h,layer){var pts=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];for(var i=0;i<4;i++){var a=pts[i],b=pts[(i+1)%4];lines.push('0','LINE','8',layer,'10',String(a[0]),'20',String(a[1]),'30','0','11',String(b[0]),'21',String(b[1]),'31','0')}}
     rect(0,0,last.siteWidth,last.siteLength,'SITE_BOUNDARY');
     var panelW=last.orientation==='portrait'?last.moduleW:last.moduleL,panelD=last.orientation==='portrait'?last.moduleL:last.moduleW,n=0;
