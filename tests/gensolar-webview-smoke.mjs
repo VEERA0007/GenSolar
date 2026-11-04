@@ -85,7 +85,7 @@ try {
   await page.locator('#epcLat').fill('17.385');
   await page.locator('#epcLon').fill('78.4867');
   await page.locator('#epcGenerate').click();
-  check((await page.locator('#epcResults').innerText()).includes('20.30 kWp'),
+  check((await page.locator('#epcResults').innerText()).includes('20.3 kWp'),
     'EPC calculates installed DC capacity from the fitted panel quantity');
   check((await page.locator('#epcLayout svg').count()) === 1,
     'EPC generates a dimensioned SVG panel layout');
